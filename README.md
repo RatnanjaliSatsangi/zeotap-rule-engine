@@ -208,19 +208,3 @@ rule-engine-app/
 ```
 
 To evaluate this, the user would provide values for `age`, `department`, `salary`, and `experience`.
-
----
-
-## License
-
-This project is licensed under the MIT License. You are free to use, modify, and distribute it as needed.
-
----
-
-## Contributing
-
-If you'd like to contribute, feel free to submit issues or pull requests. Please make sure to update tests as appropriate and adhere to the existing coding style.
-
----
-
-This README covers everything from installation, building, and running the application to design considerations and usage instructions.
