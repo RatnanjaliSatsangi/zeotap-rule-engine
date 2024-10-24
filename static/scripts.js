@@ -149,6 +149,76 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Handle Edit Rule button click
+    document.getElementById('rule-list').addEventListener('click', function (e) {
+        if (e.target.classList.contains('edit-btn')) {
+            const ruleId = e.target.getAttribute('data-rule-id');
+            const ruleText = e.target.getAttribute('data-rule-text');
+            
+            // Set the rule ID and rule text for editing
+            document.getElementById('edit-rule-id').value = ruleId;
+            document.getElementById('edit-rule-text').value = ruleText;
+
+            // Show the Edit Rule section
+            const editSection = document.getElementById('edit-rule-section');
+            editSection.style.display = 'block';
+
+            // Scroll to the Edit Rule section and set focus
+            editSection.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('edit-rule-text').focus();  // Set focus on the text area
+        }
+    });
+
+    // Handle Delete Rule
+    document.getElementById('rule-list').addEventListener('click', function (e) {
+        if (e.target.classList.contains('delete-btn')) {
+            const ruleId = e.target.getAttribute('data-rule-id');
+            fetch('/api/delete_rule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rule_id: ruleId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showFlashMessage(data.error, 'error');
+                } else {
+                    showFlashMessage(data.message, 'success');
+                    loadRules();  // Refresh the rules after deletion
+                }
+            })
+            .catch(error => {
+                showFlashMessage('An unexpected error occurred', 'error');
+            });
+        }
+    });
+
+    // Handle Edit Rule Form Submission
+    document.getElementById('edit-rule-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const ruleId = document.getElementById('edit-rule-id').value;
+        const ruleText = document.getElementById('edit-rule-text').value;
+
+        fetch('/api/modify_rule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rule_id: ruleId, rule_text: ruleText }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showFlashMessage(data.error, 'error');
+            } else {
+                showFlashMessage(data.message, 'success');
+                loadRules();  // Refresh the rule list after editing
+                document.getElementById('edit-rule-section').style.display = 'none';  // Hide the edit section
+            }
+        })
+        .catch(error => {
+            showFlashMessage('An unexpected error occurred', 'error');
+        });
+    });
+
     // Load predefined attributes
     function loadAttributes() {
         fetch('/api/get_attributes')
@@ -190,7 +260,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     select.appendChild(option);
 
                     const li = document.createElement('li');
-                    li.textContent = `ID: ${rule.id}, Name: ${rule.name}, Rule: ${rule.text}`;
+                    li.innerHTML = `ID: ${rule.id}, Name: ${rule.name}, Rule: ${rule.text}<br>`;
+                    const editButton = document.createElement('button');
+                    editButton.classList.add('edit-btn');
+                    editButton.textContent = 'Edit';
+                    editButton.setAttribute('data-rule-id', rule.id);
+                    editButton.setAttribute('data-rule-text', rule.text);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.classList.add('delete-btn');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.setAttribute('data-rule-id', rule.id);
+
+                    li.appendChild(editButton);
+                    li.appendChild(deleteButton);
                     ruleList.appendChild(li);
                 });
             });

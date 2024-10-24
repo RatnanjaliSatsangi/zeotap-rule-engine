@@ -16,7 +16,6 @@ class ASTNode:
         elif self.type == "operator":
             return f"({self.left} {self.value} {self.right})"  # Recursively print the left and right nodes
 
-
 # Rule Engine Class
 class RuleEngine:
     def __init__(self, db_name="rules.db"):
@@ -66,6 +65,13 @@ class RuleEngine:
         conn.commit()
         conn.close()
 
+    def delete_rule(self, rule_id):
+        """Delete a rule by its ID."""
+        conn = self.get_connection()
+        conn.execute('DELETE FROM rules WHERE id = ?', (rule_id,))
+        conn.commit()
+        conn.close()
+
     def combine_rules(self, rule_ids):
         """Combine the rules by storing their IDs in rule_combination."""
         rule_combination = json.dumps(rule_ids)  # Store the list of rule IDs as a JSON string
@@ -81,15 +87,12 @@ class RuleEngine:
         return {"combined_rule_name": combined_rule_name, "combined_rule_text": combined_rule_text}
 
     def get_all_rules(self):
+        """Fetch all rules from the database."""
         conn = self.get_connection()
         cursor = conn.execute('SELECT id, rule_name, rule_text, is_combination FROM rules')
         rules = cursor.fetchall()
         conn.close()
         return [{"id": row[0], "name": row[1], "text": row[2], "is_combination": row[3]} for row in rules]
-
-    def parse_rule(self, rule_text):
-        """Parse the rule into an AST structure."""
-        return ASTNode(type="operand", value=rule_text)
 
     def evaluate_rule(self, rule_id, data):
         """Evaluate the rule by fetching it from the database and comparing with data."""
@@ -124,10 +127,7 @@ class RuleEngine:
         This function will extract variables from the left-hand side of operators and ignore values from the right-hand side.
         Example: From "age > 30 AND salary > 50000", we extract ["age", "salary", "department", "experience"].
         """
-        # Define common operators
         operators = ['>', '<', '>=', '<=', '=', '==']
-
-        # Split the rule by logical connectors like AND, OR
         rule_parts = re.split(r'AND|OR', rule_text)
 
         variables = []
@@ -139,7 +139,6 @@ class RuleEngine:
                     if re.match(r'\b[a-zA-Z_]+\b', left_side):  # Ensure it's a valid variable (alphabetic)
                         variables.append(left_side)
                     break
-
         return list(set(variables))  # Remove duplicates and return
 
     def populate_rule_with_values(self, rule_text, data):
