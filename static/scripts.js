@@ -16,15 +16,15 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                showFlashMessage(data.error, 'error'); // Show error if it exists
+                showFlashMessage(data.error, 'error');
             } else {
-                showFlashMessage(data.message, 'success'); // Show success message
+                showFlashMessage(data.message, 'success');
                 resetCreateForm();
                 loadRules(); // Refresh the dropdown and existing rules list with the new rule
             }
         })
         .catch(error => {
-            showFlashMessage('An unexpected error occurred', 'error'); // Catch unexpected errors
+            showFlashMessage('An unexpected error occurred', 'error');
         });
     });
 
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Handle Select Rule Form Submission
+    // Handle Select Rule Form Submission (for evaluation)
     document.getElementById('select-rule-form').addEventListener('submit', function (e) {
         e.preventDefault();
         const ruleId = document.getElementById('select-rule-id').value;
@@ -149,77 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Handle Edit Rule button click
-    document.getElementById('rule-list').addEventListener('click', function (e) {
-        if (e.target.classList.contains('edit-btn')) {
-            const ruleId = e.target.getAttribute('data-rule-id');
-            const ruleText = e.target.getAttribute('data-rule-text');
-            
-            // Set the rule ID and rule text for editing
-            document.getElementById('edit-rule-id').value = ruleId;
-            document.getElementById('edit-rule-text').value = ruleText;
-
-            // Show the Edit Rule section
-            const editSection = document.getElementById('edit-rule-section');
-            editSection.style.display = 'block';
-
-            // Scroll to the Edit Rule section and set focus
-            editSection.scrollIntoView({ behavior: 'smooth' });
-            document.getElementById('edit-rule-text').focus();  // Set focus on the text area
-        }
-    });
-
-    // Handle Delete Rule
-    document.getElementById('rule-list').addEventListener('click', function (e) {
-        if (e.target.classList.contains('delete-btn')) {
-            const ruleId = e.target.getAttribute('data-rule-id');
-            fetch('/api/delete_rule', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rule_id: ruleId }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    showFlashMessage(data.error, 'error');
-                } else {
-                    showFlashMessage(data.message, 'success');
-                    loadRules();  // Refresh the rules after deletion
-                }
-            })
-            .catch(error => {
-                showFlashMessage('An unexpected error occurred', 'error');
-            });
-        }
-    });
-
-    // Handle Edit Rule Form Submission
-    document.getElementById('edit-rule-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const ruleId = document.getElementById('edit-rule-id').value;
-        const ruleText = document.getElementById('edit-rule-text').value;
-
-        fetch('/api/modify_rule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rule_id: ruleId, rule_text: ruleText }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showFlashMessage(data.error, 'error');
-            } else {
-                showFlashMessage(data.message, 'success');
-                loadRules();  // Refresh the rule list after editing
-                document.getElementById('edit-rule-section').style.display = 'none';  // Hide the edit section
-            }
-        })
-        .catch(error => {
-            showFlashMessage('An unexpected error occurred', 'error');
-        });
-    });
-
-    // Load predefined attributes
+    // Function to load and display attributes with Delete buttons
     function loadAttributes() {
         fetch('/api/get_attributes')
             .then(response => response.json())
@@ -228,11 +158,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 attributeList.innerHTML = '';  // Clear the list
                 data.attributes.forEach(attr => {
                     const li = document.createElement('li');
-                    li.textContent = attr;
+                    li.innerHTML = `${attr} `;
+                    
+                    // Create delete button for each attribute
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.classList.add('delete-attr-btn');
+                    deleteButton.setAttribute('data-attribute-name', attr);
+                    
+                    li.appendChild(deleteButton);
                     attributeList.appendChild(li);
                 });
             });
     }
+
+    // Handle Delete Attribute Button Click
+    document.getElementById('attribute-list').addEventListener('click', function (e) {
+        if (e.target.classList.contains('delete-attr-btn')) {
+            const attributeName = e.target.getAttribute('data-attribute-name');
+            
+            fetch('/api/delete_attribute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ attribute_name: attributeName }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showFlashMessage(data.error, 'error');
+                } else {
+                    showFlashMessage(data.message, 'success');
+                    loadAttributes();  // Reload attributes after deletion
+                }
+            })
+            .catch(error => {
+                showFlashMessage('An unexpected error occurred', 'error');
+            });
+        }
+    });
 
     // Load existing rules and populate the dropdown and the "Existing Rules" list
     function loadRules() {
@@ -261,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     const li = document.createElement('li');
                     li.innerHTML = `ID: ${rule.id}, Name: ${rule.name}, Rule: ${rule.text}<br>`;
+                    
                     const editButton = document.createElement('button');
                     editButton.classList.add('edit-btn');
                     editButton.textContent = 'Edit';
@@ -279,6 +243,72 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    // Handle Edit Rule Button Click
+    document.getElementById('rule-list').addEventListener('click', function (e) {
+        if (e.target.classList.contains('edit-btn')) {
+            const ruleId = e.target.getAttribute('data-rule-id');
+            const ruleText = e.target.getAttribute('data-rule-text');
+
+            // Populate the edit form with the existing rule text
+            document.getElementById('edit-rule-id').value = ruleId;
+            document.getElementById('edit-rule-text').value = ruleText;
+
+            // Show the edit section and scroll to it
+            document.getElementById('edit-rule-section').style.display = 'block';
+            window.scrollTo({ top: document.getElementById('edit-rule-section').offsetTop, behavior: 'smooth' });
+        }
+    });
+
+    // Handle Delete Rule Button Click
+    document.getElementById('rule-list').addEventListener('click', function (e) {
+        if (e.target.classList.contains('delete-btn')) {
+            const ruleId = e.target.getAttribute('data-rule-id');
+            
+            fetch('/api/delete_rule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rule_id: ruleId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showFlashMessage(data.error, 'error');
+                } else {
+                    showFlashMessage(data.message, 'success');
+                    loadRules();  // Reload rules after deletion
+                }
+            })
+            .catch(error => {
+                showFlashMessage('An unexpected error occurred', 'error');
+            });
+        }
+    });
+
+    // Handle Edit Rule Form Submission
+    document.getElementById('edit-rule-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const ruleId = document.getElementById('edit-rule-id').value;
+        const ruleText = document.getElementById('edit-rule-text').value;
+
+        fetch('/api/edit_rule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rule_id: ruleId, rule_text: ruleText }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showFlashMessage(data.error, 'error');
+            } else {
+                showFlashMessage(data.message, 'success');
+                loadRules();  // Reload rules after editing
+            }
+        })
+        .catch(error => {
+            showFlashMessage('An unexpected error occurred', 'error');
+        });
+    });
+
     function resetCreateForm() {
         document.getElementById('create-rule-form').reset();
     }
@@ -292,13 +322,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const flashMessageDiv = document.getElementById('flash-message');
         flashMessageDiv.textContent = message;
         flashMessageDiv.className = type === 'error' ? 'flash-error' : 'flash-success';
-
-        // Scroll to top for any flash message (error or success)
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         setTimeout(() => {
             flashMessageDiv.textContent = '';
-            flashMessageDiv.className = '';  // Remove the class after 3 seconds
+            flashMessageDiv.className = '';  // Clear after 3 seconds
         }, 3000);
     }
 });

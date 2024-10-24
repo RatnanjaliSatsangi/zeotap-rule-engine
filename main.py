@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, flash
 from rule_engine import RuleEngine
 
 app = Flask(__name__)
@@ -58,22 +58,35 @@ def create_rule():
         return jsonify({"error": "Rule name and text are required"}), 400
 
     try:
+        # Create the rule in the database
         rule_engine.create_rule(rule_name, rule_text)
         return jsonify({"message": "Rule created successfully"}), 201
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
-@app.route('/api/edit_rule/<int:rule_id>', methods=['POST'])
-def edit_rule(rule_id):
-    new_rule_text = request.json.get('rule_text')
+@app.route('/api/modify_rule', methods=['POST'])
+def modify_rule():
+    """Modify an existing rule."""
+    rule_id = request.json.get('rule_id')
+    rule_text = request.json.get('rule_text')
+
+    if not rule_id or not rule_text:
+        return jsonify({"error": "Rule ID and text are required"}), 400
+
     try:
-        rule_engine.modify_rule(rule_id, new_rule_text)
-        return jsonify({"message": "Rule updated successfully"}), 200
+        rule_engine.modify_rule(rule_id, rule_text)
+        return jsonify({"message": "Rule modified successfully"}), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
 
-@app.route('/api/delete_rule/<int:rule_id>', methods=['DELETE'])
-def delete_rule(rule_id):
+@app.route('/api/delete_rule', methods=['POST'])
+def delete_rule():
+    """Delete an existing rule."""
+    rule_id = request.json.get('rule_id')
+
+    if not rule_id:
+        return jsonify({"error": "Rule ID is required"}), 400
+
     try:
         rule_engine.delete_rule(rule_id)
         return jsonify({"message": "Rule deleted successfully"}), 200
@@ -88,6 +101,7 @@ def evaluate_rule():
     if not rule_id or not data:
         return jsonify({"error": "Rule ID and data are required"}), 400
 
+    # Evaluate the rule with the provided data
     result = rule_engine.evaluate_rule(rule_id, data)
     return jsonify({"result": result})
 
@@ -98,6 +112,7 @@ def combine_rules():
     if not rule_ids:
         return jsonify({"error": "Rule IDs are required"}), 400
 
+    # Combine the rules and return the result
     combined_rule = rule_engine.combine_rules(rule_ids)
     return jsonify({"combined_ast": str(combined_rule)})
 
@@ -109,6 +124,7 @@ def get_rules():
 
 @app.route('/api/get_rule_metadata/<int:rule_id>', methods=['GET'])
 def get_rule_metadata(rule_id):
+    """Fetch metadata for the selected rule to dynamically create input fields for evaluation."""
     conn = rule_engine.get_connection()
     cursor = conn.execute('SELECT rule_text FROM rules WHERE id = ?', (rule_id,))
     rule_data = cursor.fetchone()

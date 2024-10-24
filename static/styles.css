@@ -82,11 +82,30 @@ button:hover {
     border-radius: 4px;
 }
 
-/* Style for Edit and Delete Buttons */
-#rule-list li button {
-    margin-left: 10px;
+/* Styling for Attribute List with Text Left-Aligned and Delete Button Right-Aligned */
+#attribute-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #e9e9e9;
+    margin-bottom: 5px;
+    border-radius: 4px;
 }
 
+.delete-attr-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.delete-attr-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Additional Styling for Better Alignment of Input Fields */
 .input-group {
     display: flex;
     flex-direction: column;
@@ -99,7 +118,18 @@ button:hover {
 }
 
 .input-group input {
+    width: 100%; /* Make sure all inputs take full width */
+}
+
+/* Optional: Ensure select dropdowns are consistent with other inputs */
+select {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 16px;
     width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 20px;
 }
 
 /* Flash message styles */
@@ -117,17 +147,6 @@ button:hover {
     padding: 10px;
     margin-bottom: 20px;
     border-radius: 4px;
-}
-
-/* Optional: Ensure select dropdowns are consistent with other inputs */
-select {
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 20px;
 }
 
 /* Adjustments for mobile devices */

@@ -28,7 +28,7 @@
                     <input type="text" id="attribute-name" placeholder="Enter attribute name" required>
                     <button type="submit">Add Attribute</button>
                 </form>
-                <ul id="attribute-list"></ul>
+                <ul id="attribute-list"></ul> <!-- List of attributes with delete buttons -->
             </section>
 
             <!-- Create Rule -->
@@ -71,16 +71,17 @@
                 </form>
             </section>
 
-            <!-- Edit Rule -->
+            <!-- Edit Rule Section -->
             <section class="box" id="edit-rule-section" style="display:none;">
                 <h2>Edit Rule</h2>
                 <form id="edit-rule-form">
                     <input type="hidden" id="edit-rule-id">
                     <label for="edit-rule-text">Edit Rule Text:</label>
                     <textarea id="edit-rule-text" required></textarea>
-                    <button type="submit">Update Rule</button>
+                    <button type="submit">Save Changes</button>
                 </form>
             </section>
+
         </div>
 
         <script src="/static/scripts.js"></script>
