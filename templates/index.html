@@ -5,22 +5,137 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/styles.css">
     <title>Rule Engine</title>
+    <style>
+        .success-label {
+            color: white;
+            background-color: green;
+            padding: 10px;
+            margin-top: 10px;
+            display: inline-block;
+            border-radius: 4px;
+        }
+
+        .error-label {
+            color: white;
+            background-color: red;
+            padding: 10px;
+            margin-top: 10px;
+            display: inline-block;
+            border-radius: 4px;
+        }
+
+        #evaluation-result {
+            display: none;  /* Initially hidden */
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Rule Engine</h1>
-        <form id="rule-form">
-            <label for="rule-text">Enter Rule:</label>
-            <textarea id="rule-text" name="rule-text" required></textarea>
-            <button type="submit">Create Rule</button>
-        </form>
 
-        <div id="response-message"></div>
+        <!-- Display Pre-Created Rules -->
+        <section class="box" id="existing-rules-section" style="display: none;">
+            <h2>Existing Rules</h2>
+            <ul id="rule-list"></ul>
+        </section>
+
+        <!-- Create Rule Section -->
+        <section class="box">
+            <h2>Create Rule</h2>
+            <form id="create-rule-form">
+                <label for="rule-name">Rule Name:</label>
+                <input type="text" id="rule-name" name="rule-name" required>
+
+                <label for="rule-text">Rule Definition:</label>
+                <textarea id="rule-text" name="rule-text" required></textarea>
+                <button type="submit">Create Rule</button>
+            </form>
+            <div id="create-response-message"></div>
+        </section>
+
+        <!-- Combine Rules Section -->
+        <section class="box">
+            <h2>Combine Rules</h2>
+            <form id="combine-rule-form">
+                <label for="rule-ids">Enter Rule IDs (comma-separated):</label>
+                <input type="text" id="rule-ids" name="rule-ids" placeholder="1, 2" required>
+                <button type="submit">Combine Rules</button>
+            </form>
+            <div id="combine-response-message"></div>
+        </section>
+
+        <!-- Evaluate Rule Section -->
+        <section class="box">
+            <h2>Evaluate Rule</h2>
+            <form id="select-rule-form">
+                <label for="select-rule-id">Select Rule to Evaluate:</label>
+                <select id="select-rule-id" name="select-rule-id">
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <button type="submit">Fetch Rule Metadata</button>
+            </form>
+
+            <form id="evaluate-rule-form" style="display: none;">
+                <div id="dynamic-inputs"></div>
+                <button type="submit">Evaluate Rule</button>
+            </form>
+
+            <!-- Label for displaying the evaluation result -->
+            <div id="evaluation-result"></div>
+        </section>
     </div>
 
     <script>
-        document.getElementById('rule-form').addEventListener('submit', function(e) {
+        // Fetch and Display Pre-Created Rules
+        function loadRules() {
+            fetch('/api/get_rules')
+                .then(response => response.json())
+                .then(data => {
+                    const ruleList = document.getElementById('rule-list');
+                    const existingRulesSection = document.getElementById('existing-rules-section');
+                    ruleList.innerHTML = '';
+                    
+                    if (data.rules.length > 0) {
+                        existingRulesSection.style.display = 'block';  // Show the section if rules exist
+                        data.rules.forEach(rule => {
+                            const li = document.createElement('li');
+                            li.textContent = `ID: ${rule.id}, Name: ${rule.name}, Rule: ${rule.text}`;
+                            ruleList.appendChild(li);
+                        });
+                    } else {
+                        existingRulesSection.style.display = 'none';  // Hide the section if no rules exist
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Load rules and dropdown when the page loads
+        window.onload = function() {
+            loadRules();
+            loadRuleDropdown();
+        };
+
+        // Fetch and populate the rule dropdown
+        function loadRuleDropdown() {
+            fetch('/api/get_rules')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('select-rule-id');
+                    select.innerHTML = '';  // Clear existing options
+                    data.rules.forEach(rule => {
+                        const option = document.createElement('option');
+                        option.value = rule.id;
+                        option.text = `ID: ${rule.id}, Name: ${rule.name}`;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Handle Create Rule Form
+        document.getElementById('create-rule-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            const ruleName = document.getElementById('rule-name').value;
             const ruleText = document.getElementById('rule-text').value;
             
             fetch('/api/create_rule', {
@@ -28,15 +143,104 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ rule_text: ruleText }),
+                body: JSON.stringify({ rule_name: ruleName, rule_text: ruleText }),
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('response-message').innerText = data.message;
+                document.getElementById('create-response-message').innerText = data.message;
+                loadRules();  // Reload rules after creation
             })
-            .catch(error => {
-                console.error('Error:', error);
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Handle Combine Rules Form
+        document.getElementById('combine-rule-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ruleIds = document.getElementById('rule-ids').value.split(',').map(id => parseInt(id.trim()));
+
+            fetch('/api/combine_rules', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rule_ids: ruleIds }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('combine-response-message').innerText = 'Combined AST: ' + data.combined_ast;
+                loadRules();  // Reload rules after combination
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Handle the rule selection and dynamically generate inputs for variables (fields only)
+        document.getElementById('select-rule-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ruleId = document.getElementById('select-rule-id').value;
+
+            // Fetch rule metadata
+            fetch(`/api/get_rule_metadata/${ruleId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const dynamicInputs = document.getElementById('dynamic-inputs');
+                    dynamicInputs.innerHTML = '';  // Clear existing inputs
+
+                    // Create input fields based on rule metadata (fields only)
+                    data.fields.forEach(field => {
+                        const div = document.createElement('div');
+                        div.classList.add('input-group');
+
+                        const label = document.createElement('label');
+                        label.textContent = `Enter value for ${field}:`;
+                        label.htmlFor = `input-${field}`;
+
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.name = field;
+                        input.id = `input-${field}`;
+
+                        div.appendChild(label);
+                        div.appendChild(input);
+                        dynamicInputs.appendChild(div);
+                    });
+
+                    // Show the evaluation form now that fields are ready
+                    document.getElementById('evaluate-rule-form').style.display = 'block';
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        // Handle Rule Evaluation Form Submission
+        document.getElementById('evaluate-rule-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ruleId = document.getElementById('select-rule-id').value;
+            const data = {};
+
+            // Collect all input values dynamically
+            document.querySelectorAll('#dynamic-inputs input').forEach(input => {
+                data[input.name] = input.value;
             });
+
+            fetch('/api/evaluate_rule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ rule_id: ruleId, data: data }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const evaluationResult = document.getElementById('evaluation-result');
+                if (data.result) {
+                    evaluationResult.textContent = 'Evaluation Result: true';
+                    evaluationResult.className = 'success-label';
+                } else {
+                    evaluationResult.textContent = 'Evaluation Result: false';
+                    evaluationResult.className = 'error-label';
+                }
+                evaluationResult.style.display = 'block';  // Show the result
+            })
+            .catch(error => console.error('Error:', error));
         });
     </script>
 </body>
